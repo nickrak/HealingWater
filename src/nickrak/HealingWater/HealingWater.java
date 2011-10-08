@@ -1,232 +1,150 @@
 package nickrak.HealingWater;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event.Priority;
+import org.bukkit.event.Event.Type;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.nijiko.permissions.PermissionHandler;
-import com.nijiko.permissions.User;
-import com.nijikokun.bukkit.Permissions.Permissions;
-import org.bukkit.plugin.Plugin;
-
-public class HealingWater extends JavaPlugin implements Runnable
+public final class HealingWater extends JavaPlugin implements Runnable
 {
-	private static PermissionHandler ph;
-
-	private Thread t_healing = new Thread(this);
-	private boolean healingActive = false;
-
-	private int healAmount;
-	private int healDelay;
-
-	private enum HealAirMode {
-		HEAL_ALWAYS, HEAL_WITH_FULL_AIR, HEAL_WITH_SOME_AIR
-	}
-
-	private HealAirMode healAirMode;
+	private final Thread t_healing = new Thread(this);
+	private final Logger l = Logger.getLogger("HealingWater");
+	private volatile boolean running = false;
+	protected final ConcurrentHashMap<String, Integer> healingAmounts = new ConcurrentHashMap<String, Integer>();
 
 	@Override
-	public void onDisable()
+	public final void onDisable()
 	{
-		healingActive = false;
 		try
 		{
-			System.out.println("[Healing Water] Stopping...");
-			t_healing.join();
-			System.out.println("[Healing Water] Stopped.");
+			this.running = false;
+			this.t_healing.join();
+			this.l.info("[HealingWater] Disabled.");
 		}
-		catch (InterruptedException e)
+		catch (final InterruptedException e)
 		{
-			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public void onEnable()
+	public final void onEnable()
 	{
-		File f = new File(this.getDataFolder().getAbsolutePath() + File.separatorChar + "HealingWater.conf");
-
-		if (!f.exists())
+		final PlayerListener pl = new PlayerListener()
 		{
-			this.getDataFolder().mkdirs();
-			try
+			@Override
+			public final void onPlayerQuit(PlayerQuitEvent event)
 			{
-				FileWriter fw = new FileWriter(f);
-				fw.write("# Healing Water Configuration.\n\r");
-				fw.write("# healingDelay=[millisecond delay between consecutive healing]\n\r");
-				fw.write("# healingAmount=[number of healts to heal]\n\r");
-				fw.write("# healAirMode=[ HEAL_ALWAYS | HEAL_WITH_FULL_AIR | HEAL_WITH_SOME_AIR ]\n\r#\n\r");
-				fw.write("# Defaults: healingDelay=500, healingAmount=0.5 ... heals half a heart every half a second, healAirMode=HEAL_WITH_FULL_AIR\n\r");
-				fw.write("healingDelay=500\n\r");
-				fw.write("healingAmount=0.5\n\r");
-				fw.write("healAirMode=HEAL_WITH_FULL_AIR");
-				fw.flush();
-				fw.close();
+				final String name = event.getPlayer().getName();
+				HealingWater.this.healingAmounts.remove(name);
 			}
-			catch (IOException e)
+
+			@Override
+			public final void onPlayerJoin(PlayerJoinEvent event)
 			{
-				e.printStackTrace();
+				final Player p = event.getPlayer();
+				HealingWater.this.healingAmounts.put(p.getName(), getHealAmount(p));
 			}
-		}
 
-		try
-		{
-			Scanner scan = new Scanner(f);
-			while (scan.hasNextLine())
+			private final int getHealAmount(final Player p)
 			{
-				String line = scan.nextLine();
-				if (line.startsWith("#"))
-					continue;
-				String[] parts = line.split("=");
-
-				if (parts[0].trim().equalsIgnoreCase("healingDelay"))
+				int amount = 0;
+				for (int i = 1; i <= 20; i++)
 				{
-					this.healDelay = Integer.parseInt(parts[1]);
-				}
-				if (parts[0].trim().equalsIgnoreCase("healingAmount"))
-				{
-					this.healAmount = (int) (Double.parseDouble(parts[1]) * 2);
-				}
-				if (parts[0].trim().equalsIgnoreCase("healAirMode"))
-				{
-					this.healAirMode = null;
-					this.healAirMode = HealAirMode.valueOf(parts[1]);
-					if (this.healAirMode == null)
+					if (p.hasPermission("healingwater.heal." + i))
 					{
-						this.healAirMode = HealAirMode.HEAL_WITH_FULL_AIR;
+						amount += i;
+					}
+					if (p.hasPermission("healingwater.damage." + i))
+					{
+						amount -= i;
 					}
 				}
-			}
-		}
-		catch (FileNotFoundException e)
-		{
-			e.printStackTrace();
-		}
 
-		healingActive = true;
-		t_healing.start();
-
-		Plugin pp = this.getServer().getPluginManager().getPlugin("Permissions");
-		if (ph == null)
-		{
-			if (pp != null)
-			{
-				ph = ((Permissions) pp).getHandler();
+				return amount;
 			}
-			else
-			{
-				System.out.println("[Healing Water] Permissions not found, defaulting to file");
-			}
-		}
+		};
 
-		System.out.println("[Healing Water] Version " + this.getDescription().getVersion() + " Started. (" + this.healAmount / 2.0 + " hearts every "
-				+ this.healDelay + " milliseconds.)");
+		this.running = true;
+
+		final PluginManager pm = this.getServer().getPluginManager();
+		pm.registerEvent(Type.PLAYER_JOIN, pl, Priority.Monitor, this);
+		pm.registerEvent(Type.PLAYER_QUIT, pl, Priority.Monitor, this);
+
+		this.t_healing.start();
+		this.l.info("[HealingWater] Enabled (Version " + this.getDescription().getVersion() + ").");
 	}
 
-	private boolean shouldHeal(Player p)
+	private final boolean shouldHeal(final Player p)
 	{
-		if (this.healAirMode == HealAirMode.HEAL_ALWAYS)
+		int b = p.getRemainingAir();
+
+		if (b == p.getMaximumAir())
 		{
-			return true; 
+			return true;
 		}
-		if (this.healAirMode == HealAirMode.HEAL_WITH_SOME_AIR)
+
+		if (b == 0 && !p.hasPermission("healingwater.mode.hydrophobic"))
 		{
-			return p.getRemainingAir() > 0;
+			return p.hasPermission("healingwater.mode.aquatic");
 		}
-		return p.getRemainingAir() == p.getMaximumAir();
+
+		return !p.hasPermission("healingwater.mode.hydrophobic");
 	}
 
 	@Override
-	public void run()
+	public final void run()
 	{
-		while (healingActive)
+		while (this.running)
 		{
-			for (Player p : this.getServer().getOnlinePlayers())
+			for (final Player p : this.getServer().getOnlinePlayers())
 			{
-				int dHealth = 0;
-
-				if (ph != null)
+				final Material m = p.getLocation().getBlock().getType();
+				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldHeal(p))
 				{
-					try
+					final int a = this.healingAmounts.get(p.getName());
+					if (a < 0)
 					{
-						final User user = ph.getUserObject(p.getWorld().getName(), p.getName());
-						final Set<String> perms = (user == null ? ph.getDefaultGroup(p.getWorld().getName()).getAllPermissions() : user
-								.getAllPermissions());
-
-						for (String perm : perms)
-						{
-							final String pe = perm.toLowerCase();
-							if (pe.matches("healingwater.heal.*"))
-							{
-								try
-								{
-									final String p2 = pe.substring("healingwater.heal.".length());
-									final int amount = Integer.parseInt(p2);
-									dHealth += amount;
-								}
-								catch (NumberFormatException e)
-								{
-								}
-							}
-							else if (pe.matches("healingwater.damage.*"))
-							{
-								try
-								{
-									final String p2 = pe.substring("healingwater.damage.".length());
-									final int amount = Integer.parseInt(p2);
-									dHealth -= amount;
-								}
-								catch (NumberFormatException e)
-								{
-								}
-							}
-						}
+						p.damage(-a);
 					}
-					catch (NullPointerException npe)
+					else if (a > 0)
 					{
-						continue;
-					}
-				}
-				else
-				{
-					dHealth = this.healAmount;
-				}
-
-				final Material s = p.getLocation().getBlock().getType();
-				if ((s == Material.WATER || s == Material.STATIONARY_WATER) && shouldHeal(p))
-				{
-					int h = p.getHealth();
-					if (dHealth <= 0)
-					{
-						p.damage(-dHealth);
-					}
-					else
-					{
-						h += dHealth;
-						if (h > 20)
-						{
-							h = 20;
-						}
-						p.setHealth(h);
+						final int newHealth = p.getHealth() + a;
+						p.setHealth(newHealth >= 20 ? 20 : newHealth);
 					}
 				}
 			}
 
 			try
 			{
-				Thread.sleep(this.healDelay);
+				Thread.sleep(1000);
 			}
 			catch (InterruptedException e)
 			{
-				e.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
+	{
+		if (label.equalsIgnoreCase("starve"))
+		{
+			if (sender instanceof Player)
+			{
+				((Player) sender).setFoodLevel(0);
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -1,3 +1,94 @@
 name: HealingWater
+version: 1.4.0
+author: nickrak
+website: https://github.com/nickrak/HealingWater
 main: nickrak.HealingWater.HealingWater
-version: 1.3.3
+commands:
+  starve:
+    description: be hungry
+permissions:
+  healingwater.mode.hydrophobic:
+    default: false
+    description: Players with hydrophobia will only heal when air is full.
+  healingwater.mode.aquatic:
+    description: Players with aquatic will heal even while drowning.
+  healingwater.heal.1:
+    default: false
+  healingwater.heal.2:
+    default: false
+  healingwater.heal.3:
+    default: false
+  healingwater.heal.4:
+    default: false
+  healingwater.heal.5:
+    default: false
+  healingwater.heal.6:
+    default: false
+  healingwater.heal.7:
+    default: false
+  healingwater.heal.8:
+    default: false
+  healingwater.heal.9:
+    default: false
+  healingwater.heal.10:
+    default: false
+  healingwater.heal.11:
+    default: false
+  healingwater.heal.12:
+    default: false
+  healingwater.heal.13:
+    default: false
+  healingwater.heal.14:
+    default: false
+  healingwater.heal.15:
+    default: false
+  healingwater.heal.16:
+    default: false
+  healingwater.heal.17:
+    default: false
+  healingwater.heal.18:
+    default: false
+  healingwater.heal.19:
+    default: false
+  healingwater.heal.20:
+    default: false
+  healingwater.damage.1:
+    default: false
+  healingwater.damage.2:
+    default: false
+  healingwater.damage.3:
+    default: false
+  healingwater.damage.4:
+    default: false
+  healingwater.damage.5:
+    default: false
+  healingwater.damage.6:
+    default: false
+  healingwater.damage.7:
+    default: false
+  healingwater.damage.8:
+    default: false
+  healingwater.damage.9:
+    default: false
+  healingwater.damage.10:
+    default: false
+  healingwater.damage.11:
+    default: false
+  healingwater.damage.12:
+    default: false
+  healingwater.damage.13:
+    default: false
+  healingwater.damage.14:
+    default: false
+  healingwater.damage.15:
+    default: false
+  healingwater.damage.16:
+    default: false
+  healingwater.damage.17:
+    default: false
+  healingwater.damage.18:
+    default: false
+  healingwater.damage.19:
+    default: false
+  healingwater.damage.20:
+    default: false
