@@ -1,5 +1,3 @@
 = Healing Water
 
-Requires bukkit.
-
 [[https://github.com/nickrak/HealingWater/wiki/|Wiki]]
