@@ -21,6 +21,24 @@ public final class HealingWater extends JavaPlugin implements Runnable
 	private final Logger l = Logger.getLogger("HealingWater");
 	private volatile boolean running = false;
 	protected final ConcurrentHashMap<String, Integer> healingAmounts = new ConcurrentHashMap<String, Integer>();
+	
+	protected final int getHealAmount(final Player p)
+    {
+        int amount = 0;
+        for (int i = 1; i <= 20; i++)
+        {
+            if (p.hasPermission("healingwater.heal." + i))
+            {
+                amount += i;
+            }
+            if (p.hasPermission("healingwater.damage." + i))
+            {
+                amount -= i;
+            }
+        }
+
+        return amount;
+    }
 
 	@Override
 	public final void onDisable()
@@ -29,6 +47,7 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		{
 			this.running = false;
 			this.t_healing.join();
+			this.healingAmounts.clear();
 			this.l.info("[HealingWater] Disabled.");
 		}
 		catch (final InterruptedException e)
@@ -54,27 +73,14 @@ public final class HealingWater extends JavaPlugin implements Runnable
 				final Player p = event.getPlayer();
 				HealingWater.this.healingAmounts.put(p.getName(), getHealAmount(p));
 			}
-
-			private final int getHealAmount(final Player p)
-			{
-				int amount = 0;
-				for (int i = 1; i <= 20; i++)
-				{
-					if (p.hasPermission("healingwater.heal." + i))
-					{
-						amount += i;
-					}
-					if (p.hasPermission("healingwater.damage." + i))
-					{
-						amount -= i;
-					}
-				}
-
-				return amount;
-			}
 		};
 
 		this.running = true;
+		
+		for (final Player p : this.getServer().getOnlinePlayers())
+		{
+		    this.healingAmounts.put(p.getName(), getHealAmount(p));
+		}
 
 		final PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvent(Type.PLAYER_JOIN, pl, Priority.Monitor, this);
@@ -111,7 +117,13 @@ public final class HealingWater extends JavaPlugin implements Runnable
 				final Material m = p.getLocation().getBlock().getType();
 				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldHeal(p))
 				{
+				    if (!this.healingAmounts.containsKey(p.getName()))
+				    {
+				        this.healingAmounts.put(p.getName(), getHealAmount(p));
+				    }
+				    
 					final int a = this.healingAmounts.get(p.getName());
+					
 					if (a < 0)
 					{
 						p.damage(-a);
