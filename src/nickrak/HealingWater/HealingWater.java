@@ -20,9 +20,10 @@ public final class HealingWater extends JavaPlugin implements Runnable
 	private final Thread t_healing = new Thread(this);
 	private final Logger l = Logger.getLogger("HealingWater");
 	private volatile boolean running = false;
-	protected final ConcurrentHashMap<String, Integer> healingAmounts = new ConcurrentHashMap<String, Integer>();
+	protected final ConcurrentHashMap<String, Integer> healingWaterAmounts = new ConcurrentHashMap<String, Integer>();
+	protected final ConcurrentHashMap<String, Integer> healingLavaAmounts = new ConcurrentHashMap<String, Integer>();
 	
-	protected final int getHealAmount(final Player p)
+	protected final int getWaterHealAmount(final Player p)
     {
         int amount = 0;
         for (int i = 1; i <= 20; i++)
@@ -39,6 +40,24 @@ public final class HealingWater extends JavaPlugin implements Runnable
 
         return amount;
     }
+	
+	protected final int getLavaHealAmount(final Player p)
+	{
+        int amount = 0;
+        for (int i = 1; i <= 20; i++)
+        {
+            if (p.hasPermission("healingwater.lava.heal." + i))
+            {
+                amount += i;
+            }
+            if (p.hasPermission("healingwater.lava.damage." + i))
+            {
+                amount -= i;
+            }
+        }
+
+        return amount;
+	}
 
 	@Override
 	public final void onDisable()
@@ -47,7 +66,8 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		{
 			this.running = false;
 			this.t_healing.join();
-			this.healingAmounts.clear();
+			this.healingWaterAmounts.clear();
+			this.healingLavaAmounts.clear();
 			this.l.info("[HealingWater] Disabled.");
 		}
 		catch (final InterruptedException e)
@@ -64,14 +84,16 @@ public final class HealingWater extends JavaPlugin implements Runnable
 			public final void onPlayerQuit(PlayerQuitEvent event)
 			{
 				final String name = event.getPlayer().getName();
-				HealingWater.this.healingAmounts.remove(name);
+				HealingWater.this.healingWaterAmounts.remove(name);
+				HealingWater.this.healingLavaAmounts.remove(name);
 			}
 
 			@Override
 			public final void onPlayerJoin(PlayerJoinEvent event)
 			{
 				final Player p = event.getPlayer();
-				HealingWater.this.healingAmounts.put(p.getName(), getHealAmount(p));
+				HealingWater.this.healingWaterAmounts.put(p.getName(), getWaterHealAmount(p));
+				HealingWater.this.healingLavaAmounts.put(p.getName(), getLavaHealAmount(p));
 			}
 		};
 
@@ -79,7 +101,8 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		
 		for (final Player p : this.getServer().getOnlinePlayers())
 		{
-		    this.healingAmounts.put(p.getName(), getHealAmount(p));
+		    this.healingWaterAmounts.put(p.getName(), getWaterHealAmount(p));
+		    this.healingLavaAmounts.put(p.getName(), getLavaHealAmount(p));
 		}
 
 		final PluginManager pm = this.getServer().getPluginManager();
@@ -90,7 +113,7 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		this.l.info("[HealingWater] Enabled (Version " + this.getDescription().getVersion() + ").");
 	}
 
-	private final boolean shouldHeal(final Player p)
+	private final boolean shouldWaterHeal(final Player p)
 	{
 		int b = p.getRemainingAir();
 
@@ -115,14 +138,14 @@ public final class HealingWater extends JavaPlugin implements Runnable
 			for (final Player p : this.getServer().getOnlinePlayers())
 			{
 				final Material m = p.getLocation().getBlock().getType();
-				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldHeal(p))
+				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldWaterHeal(p))
 				{
-				    if (!this.healingAmounts.containsKey(p.getName()))
+				    if (!this.healingWaterAmounts.containsKey(p.getName()))
 				    {
-				        this.healingAmounts.put(p.getName(), getHealAmount(p));
+				        this.healingWaterAmounts.put(p.getName(), getWaterHealAmount(p));
 				    }
 				    
-					final int a = this.healingAmounts.get(p.getName());
+					final int a = this.healingWaterAmounts.get(p.getName());
 					
 					if (a < 0)
 					{
@@ -133,6 +156,25 @@ public final class HealingWater extends JavaPlugin implements Runnable
 						final int newHealth = p.getHealth() + a;
 						p.setHealth(newHealth >= 20 ? 20 : newHealth);
 					}
+				}
+				if (m == Material.LAVA || m == Material.STATIONARY_LAVA)
+				{
+				    if (!this.healingLavaAmounts.containsKey(p.getName()))
+				    {
+				        this.healingLavaAmounts.put(p.getName(), getLavaHealAmount(p));
+				    }
+				    
+				    final int a = this.healingLavaAmounts.get(p.getName());
+				    
+				    if (a < 0)
+				    {
+				        p.damage(-a);
+				    }
+				    else if (a > 0)
+				    {
+				        final int newHealth = p.getHealth() + a;
+				        p.setHealth(newHealth >= 20 ? 20 : newHealth);
+				    }
 				}
 			}
 

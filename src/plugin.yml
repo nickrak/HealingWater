@@ -1,5 +1,5 @@
 name: HealingWater
-version: 1.4.1
+version: 1.4.2
 author: nickrak
 website: https://github.com/nickrak/HealingWater
 main: nickrak.HealingWater.HealingWater
@@ -91,4 +91,84 @@ permissions:
   healingwater.damage.19:
     default: false
   healingwater.damage.20:
+    default: false
+  healingwater.lava.heal.1:
+    default: false
+  healingwater.lava.heal.2:
+    default: false
+  healingwater.lava.heal.3:
+    default: false
+  healingwater.lava.heal.4:
+    default: false
+  healingwater.lava.heal.5:
+    default: false
+  healingwater.lava.heal.6:
+    default: false
+  healingwater.lava.heal.7:
+    default: false
+  healingwater.lava.heal.8:
+    default: false
+  healingwater.lava.heal.9:
+    default: false
+  healingwater.lava.heal.10:
+    default: false
+  healingwater.lava.heal.11:
+    default: false
+  healingwater.lava.heal.12:
+    default: false
+  healingwater.lava.heal.13:
+    default: false
+  healingwater.lava.heal.14:
+    default: false
+  healingwater.lava.heal.15:
+    default: false
+  healingwater.lava.heal.16:
+    default: false
+  healingwater.lava.heal.17:
+    default: false
+  healingwater.lava.heal.18:
+    default: false
+  healingwater.lava.heal.19:
+    default: false
+  healingwater.lava.heal.20:
+    default: false
+  healingwater.lava.damage.1:
+    default: false
+  healingwater.lava.damage.2:
+    default: false
+  healingwater.lava.damage.3:
+    default: false
+  healingwater.lava.damage.4:
+    default: false
+  healingwater.lava.damage.5:
+    default: false
+  healingwater.lava.damage.6:
+    default: false
+  healingwater.lava.damage.7:
+    default: false
+  healingwater.lava.damage.8:
+    default: false
+  healingwater.lava.damage.9:
+    default: false
+  healingwater.lava.damage.10:
+    default: false
+  healingwater.lava.damage.11:
+    default: false
+  healingwater.lava.damage.12:
+    default: false
+  healingwater.lava.damage.13:
+    default: false
+  healingwater.lava.damage.14:
+    default: false
+  healingwater.lava.damage.15:
+    default: false
+  healingwater.lava.damage.16:
+    default: false
+  healingwater.lava.damage.17:
+    default: false
+  healingwater.lava.damage.18:
+    default: false
+  healingwater.lava.damage.19:
+    default: false
+  healingwater.lava.damage.20:
     default: false
