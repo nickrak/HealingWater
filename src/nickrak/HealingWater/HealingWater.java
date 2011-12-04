@@ -137,6 +137,10 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		{
 			for (final Player p : this.getServer().getOnlinePlayers())
 			{
+			    if (p.isInsideVehicle())
+			    {
+			        continue;
+			    }
 				final Material m = p.getLocation().getBlock().getType();
 				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldWaterHeal(p))
 				{
