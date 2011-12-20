@@ -3,6 +3,7 @@ package nickrak.HealingWater;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -37,7 +38,6 @@ public final class HealingWater extends JavaPlugin implements Runnable
                 amount -= i;
             }
         }
-
         return amount;
     }
 	
@@ -99,6 +99,9 @@ public final class HealingWater extends JavaPlugin implements Runnable
 
 		this.running = true;
 		
+		this.healingWaterAmounts.clear();
+		this.healingLavaAmounts.clear();
+		
 		for (final Player p : this.getServer().getOnlinePlayers())
 		{
 		    this.healingWaterAmounts.put(p.getName(), getWaterHealAmount(p));
@@ -137,15 +140,19 @@ public final class HealingWater extends JavaPlugin implements Runnable
 		{
 			for (final Player p : this.getServer().getOnlinePlayers())
 			{
+			    StringBuilder sb = new StringBuilder();
 			    if (p.isInsideVehicle())
 			    {
 			        continue;
 			    }
+			    sb.append("OV");
 				final Material m = p.getLocation().getBlock().getType();
 				if ((m == Material.WATER || m == Material.STATIONARY_WATER) && shouldWaterHeal(p))
 				{
+				    sb.append("W");
 				    if (!this.healingWaterAmounts.containsKey(p.getName()))
 				    {
+				        sb.append("?");
 				        this.healingWaterAmounts.put(p.getName(), getWaterHealAmount(p));
 				    }
 				    
@@ -153,18 +160,27 @@ public final class HealingWater extends JavaPlugin implements Runnable
 					
 					if (a < 0)
 					{
+					    sb.append("-");
 						p.damage(-a);
 					}
 					else if (a > 0)
 					{
+					    sb.append("+");
 						final int newHealth = p.getHealth() + a;
 						p.setHealth(newHealth >= 20 ? 20 : newHealth);
+						p.sendMessage(ChatColor.AQUA + "Healed to " + newHealth);
+					}
+					else
+					{
+					    sb.append("0");
 					}
 				}
 				if (m == Material.LAVA || m == Material.STATIONARY_LAVA)
 				{
+				    sb.append("L");
 				    if (!this.healingLavaAmounts.containsKey(p.getName()))
 				    {
+				        sb.append("?");
 				        this.healingLavaAmounts.put(p.getName(), getLavaHealAmount(p));
 				    }
 				    
@@ -172,14 +188,22 @@ public final class HealingWater extends JavaPlugin implements Runnable
 				    
 				    if (a < 0)
 				    {
+				        sb.append("-");
 				        p.damage(-a);
 				    }
 				    else if (a > 0)
 				    {
+				        sb.append("+");
 				        final int newHealth = p.getHealth() + a;
 				        p.setHealth(newHealth >= 20 ? 20 : newHealth);
 				    }
+				    else
+				    {
+				        sb.append("0");
+				    }
 				}
+				
+				p.sendMessage(ChatColor.AQUA + sb.toString());
 			}
 
 			try

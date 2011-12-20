@@ -2,7 +2,8 @@ name: HealingWater
 version: 1.4.3
 author: nickrak
 website: https://github.com/nickrak/HealingWater
-main: nickrak.HealingWater.HealingWater
+main: nickrak.HealingWater2.HealingWater
+softdepend: [Permission, PermissionsEx]
 commands:
   starve:
     description: be hungry
