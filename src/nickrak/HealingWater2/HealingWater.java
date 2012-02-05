@@ -6,17 +6,16 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.entity.EntityListener;
-import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class HealingWater extends JavaPlugin implements Runnable
+public final class HealingWater extends JavaPlugin implements Runnable, Listener
 {
     private final class CacheUpdater implements Runnable
     {
@@ -85,6 +84,33 @@ public final class HealingWater extends JavaPlugin implements Runnable
         this.clearAll();
         this.log("Disabled");
     }
+    
+    @EventHandler(priority = EventPriority.MONITOR)
+    public final void onPlayerQuit(PlayerQuitEvent event)
+    {
+        final String p = event.getPlayer().getName();
+
+        healInLava.remove(p);
+        healInWater.remove(p);
+        damgInLava.remove(p);
+        damgInWater.remove(p);
+        ignoreGeneralLava.remove(p);
+    }
+    
+    @EventHandler(priority = EventPriority.NORMAL)
+    public final void onEntityDamage(EntityDamageEvent event)
+    {
+        if (event.isCancelled()) return;
+        if (event.getEntity() instanceof Player)
+        {
+            if (event.getCause().equals(DamageCause.LAVA))
+            {
+                final String p = ((Player) event.getEntity()).getName();
+                final boolean cancel = ignoreGeneralLava.containsKey(p) && ignoreGeneralLava.get(p);
+                event.setCancelled(cancel);
+            }
+        }
+    }
 
     @Override
     public final void onEnable()
@@ -92,37 +118,7 @@ public final class HealingWater extends JavaPlugin implements Runnable
         this.clearAll();
 
         final PluginManager pm = this.getServer().getPluginManager();
-        pm.registerEvent(Type.PLAYER_QUIT, new PlayerListener()
-        {
-            @Override
-            public final void onPlayerQuit(PlayerQuitEvent event)
-            {
-                final String p = event.getPlayer().getName();
-
-                healInLava.remove(p);
-                healInWater.remove(p);
-                damgInLava.remove(p);
-                damgInWater.remove(p);
-                ignoreGeneralLava.remove(p);
-            }
-        }, Priority.Monitor, this);
-        pm.registerEvent(Type.ENTITY_DAMAGE, new EntityListener()
-        {
-            @Override
-            public void onEntityDamage(EntityDamageEvent event)
-            {
-                if (event.isCancelled()) return;
-                if (event.getEntity() instanceof Player)
-                {
-                    if (event.getCause().equals(DamageCause.LAVA))
-                    {
-                        final String p = ((Player) event.getEntity()).getName();
-                        final boolean cancel = ignoreGeneralLava.containsKey(p) && ignoreGeneralLava.get(p);
-                        event.setCancelled(cancel);
-                    }
-                }
-            }
-        }, Priority.Normal, this);
+        pm.registerEvents(this, this);
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this, 20L, 20L);
         Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, this.cu, 20L, 20L);
